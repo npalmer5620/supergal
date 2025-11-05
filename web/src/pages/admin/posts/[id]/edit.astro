@@ -1,0 +1,52 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import PostForm from '../../../../components/PostForm.astro';
+import { getPost } from '../../../../utils/api';
+
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/admin/posts');
+}
+
+// Fetch post data
+const postResult = await getPost(id);
+
+if (!postResult.success || !postResult.data) {
+  return Astro.redirect('/admin/posts');
+}
+
+const post = postResult.data;
+const pageTitle = `Edit Post: ${post.title}`;
+---
+
+<AdminLayout pageTitle={pageTitle}>
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">{pageTitle}</h1>
+        <p class="text-gray-600 mt-2">Update your blog post</p>
+      </div>
+      <a
+        href={`/blog/${post.slug}`}
+        target="_blank"
+        class="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+      >
+        View Post →
+      </a>
+    </div>
+
+    <PostForm
+      post={post}
+      submitText="Update Post"
+    />
+  </div>
+</AdminLayout>
+
+<script define:vars={{ postId: id }}>
+  // Pass post ID to form for API submission
+  const form = document.getElementById('post-form');
+  if (form) {
+    form.setAttribute('data-post-id', postId);
+  }
+</script>

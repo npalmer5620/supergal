@@ -1,0 +1,155 @@
+---
+export interface Props {
+  initialContent?: string;
+  placeholder?: string;
+}
+
+const { initialContent = '', placeholder = 'Enter your markdown content here...' } = Astro.props;
+---
+
+<div class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-md">
+  <div class="grid grid-cols-1 md:grid-cols-2 h-[600px]">
+    <!-- Editor Pane -->
+    <div class="flex flex-col border-r border-gray-200">
+      <div class="bg-gray-50 border-b border-gray-200 px-4 py-3">
+        <h3 class="text-sm font-semibold text-gray-900">Markdown</h3>
+      </div>
+      <textarea
+        id="markdown-editor"
+        placeholder={placeholder}
+        class="flex-grow p-4 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-gray-900"
+      >
+        {initialContent}
+      </textarea>
+      <div class="bg-gray-50 border-t border-gray-200 px-4 py-2 text-xs text-gray-600">
+        <span id="word-count">0</span> words • <span id="char-count">0</span> characters
+      </div>
+    </div>
+
+    <!-- Preview Pane -->
+    <div class="hidden md:flex flex-col">
+      <div class="bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-gray-900">Preview</h3>
+        <button
+          type="button"
+          id="copy-html-btn"
+          class="text-xs px-2 py-1 bg-gray-200 text-gray-900 rounded hover:bg-gray-300 transition-colors"
+          title="Copy HTML"
+        >
+          Copy HTML
+        </button>
+      </div>
+      <div
+        id="markdown-preview"
+        class="flex-grow overflow-auto p-4 prose prose-sm max-w-none bg-white"
+      >
+        <p class="text-gray-500">Preview will appear here...</p>
+      </div>
+    </div>
+
+    <!-- Mobile Preview Toggle -->
+    <div class="md:hidden flex flex-col">
+      <div class="bg-gray-50 border-b border-gray-200 px-4 py-3">
+        <button
+          type="button"
+          id="toggle-preview-btn"
+          class="text-sm font-semibold text-gray-900 hover:text-gray-600"
+        >
+          Show Preview
+        </button>
+      </div>
+      <div
+        id="markdown-preview-mobile"
+        class="hidden flex-grow overflow-auto p-4 prose prose-sm max-w-none bg-white"
+      >
+        <p class="text-gray-500">Preview will appear here...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script lang="ts">
+  import { marked } from 'marked';
+
+  const editor = document.getElementById('markdown-editor') as HTMLTextAreaElement;
+  const preview = document.getElementById('markdown-preview');
+  const previewMobile = document.getElementById('markdown-preview-mobile');
+  const copyBtn = document.getElementById('copy-html-btn');
+  const toggleBtn = document.getElementById('toggle-preview-btn');
+  const wordCountEl = document.getElementById('word-count');
+  const charCountEl = document.getElementById('char-count');
+
+  function updatePreview() {
+    if (!editor) return;
+
+    const markdown = editor.value;
+    let html = '';
+
+    try {
+      html = marked(markdown);
+    } catch (error) {
+      html = '<p style="color: red;">Error parsing markdown</p>';
+    }
+
+    if (preview) {
+      preview.innerHTML = html;
+    }
+    if (previewMobile) {
+      previewMobile.innerHTML = html;
+    }
+
+    // Update word and char count
+    const wordCount = markdown.trim().split(/\s+/).filter(w => w.length > 0).length;
+    const charCount = markdown.length;
+    if (wordCountEl) wordCountEl.textContent = String(wordCount);
+    if (charCountEl) charCountEl.textContent = String(charCount);
+
+    // Update hidden field for form submission
+    const hiddenField = document.querySelector('textarea[name="content"]');
+    if (hiddenField) {
+      (hiddenField as HTMLTextAreaElement).value = markdown;
+    }
+  }
+
+  // Initial update
+  updatePreview();
+
+  // Update on input
+  if (editor) {
+    editor.addEventListener('input', () => {
+      updatePreview();
+    });
+  }
+
+  // Copy HTML button
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      if (preview) {
+        const html = preview.innerHTML;
+        navigator.clipboard.writeText(html).then(() => {
+          const originalText = copyBtn.textContent;
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => {
+            copyBtn.textContent = originalText;
+          }, 2000);
+        });
+      }
+    });
+  }
+
+  // Toggle preview on mobile
+  if (toggleBtn && previewMobile && editor) {
+    toggleBtn.addEventListener('click', () => {
+      const isHidden = previewMobile.classList.contains('hidden');
+      if (isHidden) {
+        editor.classList.add('hidden');
+        previewMobile.classList.remove('hidden');
+        toggleBtn.textContent = 'Show Editor';
+      } else {
+        editor.classList.remove('hidden');
+        previewMobile.classList.add('hidden');
+        toggleBtn.textContent = 'Show Preview';
+      }
+    });
+  }
+</script>

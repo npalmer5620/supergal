@@ -1,0 +1,131 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getPosts, getGalleries, getImages } from '../../utils/api';
+
+// Fetch statistics
+const postsResult = await getPosts(1, 100);
+const galleriesResult = await getGalleries(1, 100);
+const imagesResult = await getImages(1, 100);
+
+const posts = postsResult.success ? postsResult.data || [] : [];
+const galleries = galleriesResult.success ? galleriesResult.data || [] : [];
+const images = imagesResult.success ? imagesResult.data || [] : [];
+
+const stats = [
+  { label: 'Posts', value: posts.length, href: '/admin/posts' },
+  { label: 'Galleries', value: galleries.length, href: '/admin/galleries' },
+  { label: 'Images', value: images.length, href: '/admin/images' }
+];
+---
+
+<AdminLayout pageTitle="Dashboard">
+  <div class="space-y-8">
+    <!-- Header -->
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+      <p class="text-gray-600 mt-2">Welcome back! Here's an overview of your content.</p>
+    </div>
+
+    <!-- Statistics Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {stats.map(stat => (
+        <a
+          href={stat.href}
+          class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+        >
+          <p class="text-gray-600 text-sm font-medium mb-2">{stat.label}</p>
+          <p class="text-4xl font-bold text-gray-900">{stat.value}</p>
+        </a>
+      ))}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <h2 class="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <a
+          href="/admin/posts/new"
+          class="px-4 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-center font-medium"
+        >
+          Create Post
+        </a>
+        <a
+          href="/admin/galleries/new"
+          class="px-4 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-center font-medium"
+        >
+          Create Gallery
+        </a>
+        <a
+          href="/admin/images"
+          class="px-4 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-center font-medium"
+        >
+          Upload Images
+        </a>
+        <a
+          href="/admin/tags"
+          class="px-4 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-center font-medium"
+        >
+          Manage Tags
+        </a>
+      </div>
+    </div>
+
+    <!-- Recent Posts -->
+    {posts.length > 0 && (
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold text-gray-900">Recent Posts</h2>
+          <a href="/admin/posts" class="text-gray-600 hover:text-gray-900 text-sm">View All →</a>
+        </div>
+        <div class="space-y-3">
+          {posts.slice(0, 5).map(post => (
+            <div class="flex items-center justify-between py-3 border-b border-gray-200 last:border-0">
+              <div class="flex-grow">
+                <p class="font-medium text-gray-900">{post.title}</p>
+                <p class="text-sm text-gray-500">{new Date(post.createdAt).toLocaleDateString()}</p>
+              </div>
+              <div class="flex gap-2">
+                <a
+                  href={`/admin/posts/${post.id}/edit`}
+                  class="px-3 py-1 text-sm bg-gray-100 text-gray-900 rounded hover:bg-gray-200 transition-colors"
+                >
+                  Edit
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <!-- Recent Galleries -->
+    {galleries.length > 0 && (
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold text-gray-900">Recent Galleries</h2>
+          <a href="/admin/galleries" class="text-gray-600 hover:text-gray-900 text-sm">View All →</a>
+        </div>
+        <div class="space-y-3">
+          {galleries.slice(0, 5).map(gallery => (
+            <div class="flex items-center justify-between py-3 border-b border-gray-200 last:border-0">
+              <div class="flex-grow">
+                <p class="font-medium text-gray-900">{gallery.title}</p>
+                <p class="text-sm text-gray-500">
+                  {(gallery.imageCount ?? gallery.images?.length ?? 0)} images • {new Date(gallery.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+              <div class="flex gap-2">
+                <a
+                  href={`/admin/galleries/${gallery.id}/edit`}
+                  class="px-3 py-1 text-sm bg-gray-100 text-gray-900 rounded hover:bg-gray-200 transition-colors"
+                >
+                  Edit
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</AdminLayout>

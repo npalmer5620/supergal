@@ -1,0 +1,65 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPost } from '../../utils/api';
+import { markdownToHtml, formatDate, getReadingTime } from '../../utils/markdown';
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/blog');
+}
+
+const postResult = await getPost(slug);
+
+if (!postResult.success || !postResult.data) {
+  return Astro.redirect('/blog');
+}
+
+const post = postResult.data;
+const htmlContent = markdownToHtml(post.content);
+const readingTime = getReadingTime(post.content);
+---
+
+<BaseLayout pageTitle={post.title} description={post.excerpt}>
+  <!-- Article Header -->
+  <section class="bg-gradient-to-br from-gray-50 to-gray-100 py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+        {post.title}
+      </h1>
+
+      <div class="flex flex-wrap items-center gap-4 text-gray-600">
+        <time datetime={post.createdAt}>
+          {formatDate(post.createdAt)}
+        </time>
+        <span>•</span>
+        <span>{readingTime} min read</span>
+        {post.updatedAt && post.updatedAt !== post.createdAt && (
+          <>
+            <span>•</span>
+            <span>Updated {formatDate(post.updatedAt)}</span>
+          </>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <!-- Article Content -->
+  <article class="py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="prose prose-lg max-w-none">
+        <Fragment set:html={htmlContent} />
+      </div>
+
+      <!-- Navigation -->
+      <div class="mt-12 pt-8 border-t border-gray-200">
+        <a
+          href="/blog"
+          class="inline-block text-gray-600 hover:text-gray-900 font-medium transition-colors"
+        >
+          ← Back to all posts
+        </a>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

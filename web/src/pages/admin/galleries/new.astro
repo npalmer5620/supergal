@@ -1,0 +1,27 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import GalleryForm from '../../../components/GalleryForm.astro';
+
+const pageTitle = 'Create Gallery';
+---
+
+<AdminLayout pageTitle={pageTitle}>
+  <div class="space-y-6">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">{pageTitle}</h1>
+      <p class="text-gray-600 mt-2">Create a new image gallery</p>
+    </div>
+
+    <GalleryForm
+      submitText="Create Gallery"
+      gallery={{
+        title: '',
+        slug: '',
+        description: '',
+        status: 'draft',
+        scheduledDate: '',
+        images: []
+      }}
+    />
+  </div>
+</AdminLayout>

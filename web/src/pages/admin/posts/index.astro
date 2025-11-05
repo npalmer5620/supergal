@@ -1,0 +1,105 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getPosts, deletePost } from '../../../utils/api';
+import { formatDate } from '../../../utils/markdown';
+import ConfirmDialog from '../../../components/ConfirmDialog.astro';
+import PostQuickEditModal from '../../../components/PostQuickEditModal.astro';
+
+// Fetch all posts
+const postsResult = await getPosts(1, 100);
+const posts = postsResult.success ? postsResult.data || [] : [];
+---
+
+<AdminLayout pageTitle="Manage Posts">
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Posts</h1>
+        <p class="text-gray-600 mt-2">Manage your blog posts</p>
+      </div>
+      <a
+        href="/admin/posts/new"
+        class="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+      >
+        + New Post
+      </a>
+    </div>
+
+    {posts.length > 0 ? (
+      <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Title</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Slug</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Created</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            {posts.map(post => (
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4">
+                  <p class="font-medium text-gray-900">{post.title}</p>
+                </td>
+                <td class="px-6 py-4 text-gray-600 text-sm">{post.slug}</td>
+                <td class="px-6 py-4 text-gray-600 text-sm">{formatDate(post.createdAt)}</td>
+                <td class="px-6 py-4">
+                  <div class="flex gap-2">
+                    <button
+                      type="button"
+                      class="px-3 py-1 text-sm bg-blue-100 text-blue-900 rounded hover:bg-blue-200 transition-colors"
+                      onclick={`openPostQuickEdit(${JSON.stringify(post.id)}, ${JSON.stringify(post.title)}, ${JSON.stringify(post.status || 'draft')}, ${JSON.stringify(post.createdAt || '')}, ${JSON.stringify(post.updatedAt || post.createdAt || '')})`}
+                    >
+                      Quick Edit
+                    </button>
+                    <a
+                      href={`/blog/${post.slug}`}
+                      target="_blank"
+                      class="px-3 py-1 text-sm bg-gray-100 text-gray-900 rounded hover:bg-gray-200 transition-colors"
+                    >
+                      View
+                    </a>
+                    <button
+                      type="button"
+                      class="px-3 py-1 text-sm bg-red-100 text-red-900 rounded hover:bg-red-200 transition-colors"
+                      onclick={`showConfirmDialog('delete-post-${post.id}', async () => {
+                        const result = await (await import('../../../utils/api')).deletePost(${JSON.stringify(post.id)});
+                        if (result.success) {
+                          window.location.reload();
+                        }
+                      })`}
+                    >
+                      Delete
+                    </button>
+                    <ConfirmDialog
+                      id={`delete-post-${post.id}`}
+                      title="Delete Post"
+                      message={`Are you sure you want to delete "${post.title}"? This action cannot be undone.`}
+                      confirmText="Delete"
+                      cancelText="Cancel"
+                      isDangerous={true}
+                    />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div class="bg-white rounded-lg shadow-md p-12 text-center">
+        <p class="text-gray-500 mb-4">No posts yet. Create your first post to get started!</p>
+        <a
+          href="/admin/posts/new"
+          class="inline-block px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+        >
+          Create Post
+        </a>
+      </div>
+    )}
+  </div>
+
+  <!-- Quick Edit Modal -->
+  <PostQuickEditModal />
+</AdminLayout>

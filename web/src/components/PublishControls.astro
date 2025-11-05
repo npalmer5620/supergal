@@ -1,0 +1,146 @@
+---
+export interface Props {
+  status?: 'draft' | 'published';
+  scheduledDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+const {
+  status = 'draft',
+  scheduledDate,
+  createdAt,
+  updatedAt
+} = Astro.props;
+
+const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+});
+---
+
+<div class="space-y-4">
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h3 class="text-lg font-bold text-gray-900 mb-4">Publishing</h3>
+
+    <div class="space-y-4">
+      <!-- Status Toggle -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-3">Status</label>
+        <div class="flex items-center gap-4">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="status"
+              value="draft"
+              checked={status === 'draft'}
+              class="w-4 h-4 text-gray-900"
+            />
+            <span class="text-sm text-gray-700">Draft</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="status"
+              value="published"
+              checked={status === 'published'}
+              class="w-4 h-4 text-gray-900"
+            />
+            <span class="text-sm text-gray-700">Published</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Schedule Section -->
+      <div class="border-t border-gray-200 pt-4">
+        <label for="scheduled-date" class="block text-sm font-medium text-gray-700 mb-2">
+          Schedule Publish (Optional)
+        </label>
+        <input
+          type="datetime-local"
+          id="scheduled-date"
+          name="scheduledDate"
+          value={scheduledDate}
+          class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+        />
+        <p class="text-xs text-gray-500 mt-2">
+          Leave empty to publish immediately when marked as published
+        </p>
+      </div>
+
+      <!-- Status Info -->
+      <div class="bg-gray-50 rounded-lg p-3 text-sm">
+        {status === 'draft' && (
+          <p class="text-gray-700">
+            <span class="inline-block px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium mr-2">
+              DRAFT
+            </span>
+            This content is not publicly visible
+          </p>
+        )}
+        {status === 'published' && scheduledDate && (
+          <p class="text-gray-700">
+            <span class="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium mr-2">
+              SCHEDULED
+            </span>
+            Will be published on {formatDate(scheduledDate)}
+          </p>
+        )}
+        {status === 'published' && !scheduledDate && (
+          <p class="text-gray-700">
+            <span class="inline-block px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium mr-2">
+              PUBLISHED
+            </span>
+            This content is publicly visible
+          </p>
+        )}
+      </div>
+    </div>
+  </div>
+
+  <!-- Metadata -->
+  {(createdAt || updatedAt) && (
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <h3 class="text-lg font-bold text-gray-900 mb-4">Metadata</h3>
+      <div class="space-y-2 text-sm text-gray-600">
+        {createdAt && (
+          <p>Created: <time datetime={createdAt}>{formatDate(createdAt)}</time></p>
+        )}
+        {updatedAt && updatedAt !== createdAt && (
+          <p>Last modified: <time datetime={updatedAt}>{formatDate(updatedAt)}</time></p>
+        )}
+      </div>
+    </div>
+  )}
+</div>
+
+<script lang="ts">
+  // Handle status change
+  const statusInputs = document.querySelectorAll('input[name="status"]');
+  statusInputs.forEach(input => {
+    input.addEventListener('change', (e) => {
+      const target = e.target as HTMLInputElement;
+      // Update form status field (if it exists)
+      const statusField = document.querySelector('input[type="hidden"][name="status"]');
+      if (statusField) {
+        (statusField as HTMLInputElement).value = target.value;
+      }
+    });
+  });
+
+  // Handle scheduled date change
+  const scheduledDateInput = document.getElementById('scheduled-date') as HTMLInputElement;
+  if (scheduledDateInput) {
+    scheduledDateInput.addEventListener('change', (e) => {
+      const target = e.target as HTMLInputElement;
+      // Update form scheduled date field
+      const scheduledField = document.querySelector('input[type="hidden"][name="scheduledDate"]');
+      if (scheduledField) {
+        (scheduledField as HTMLInputElement).value = target.value;
+      }
+    });
+  }
+</script>

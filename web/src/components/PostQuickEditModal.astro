@@ -1,0 +1,327 @@
+---
+export interface Props {
+  id?: string;
+}
+
+const { id = 'post-quick-edit-modal' } = Astro.props;
+const apiBase = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:8787/api';
+---
+
+<dialog id={id} class="quick-edit-dialog">
+  <div class="quick-edit-card space-y-4">
+    <h2 class="text-xl font-bold text-gray-900">Edit Post</h2>
+
+    <form id="post-quick-edit-form" class="space-y-4">
+      <div>
+        <label for="post-title" class="block text-sm font-medium text-gray-700 mb-1">
+          Title
+        </label>
+        <input
+          type="text"
+          id="post-title"
+          name="title"
+          maxlength="200"
+          class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+          required
+        />
+        <div class="text-xs text-gray-500 mt-1">
+          <span id="post-title-count">0</span> / 200 characters
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+        <div class="flex items-center gap-4">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="status" value="draft" class="w-4 h-4" checked />
+            <span class="text-sm text-gray-700">Draft</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="status" value="published" class="w-4 h-4" />
+            <span class="text-sm text-gray-700">Published</span>
+          </label>
+        </div>
+      </div>
+
+      <div id="post-info" class="bg-gray-50 rounded-lg p-3 text-xs text-gray-600 space-y-1">
+        <p><strong>Created:</strong> <span id="post-created">-</span></p>
+        <p><strong>Updated:</strong> <span id="post-updated">-</span></p>
+      </div>
+
+      <div class="flex gap-3 justify-end pt-4 border-t border-gray-200">
+        <button
+          type="button"
+          id="post-cancel-btn"
+          class="px-4 py-2 rounded-lg border border-gray-200 text-gray-900 hover:bg-gray-50 transition-colors font-medium text-sm"
+        >
+          Cancel
+        </button>
+        <a
+          id="post-edit-link"
+          href="#"
+          target="_blank"
+          class="px-4 py-2 rounded-lg border border-gray-200 text-gray-900 hover:bg-gray-50 transition-colors font-medium text-sm"
+          title="Open full editor"
+        >
+          Edit Full
+        </a>
+        <button
+          type="submit"
+          id="post-submit-btn"
+          class="px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-800 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<script is:inline data-modal-id={id} data-api-base={apiBase}>
+  ((scriptEl) => {
+    if (!(scriptEl instanceof HTMLScriptElement)) return;
+
+    const modalId = scriptEl.dataset.modalId || 'post-quick-edit-modal';
+    const API_BASE = scriptEl.dataset.apiBase || 'http://localhost:8787/api';
+
+    const modal = document.getElementById(modalId);
+    if (!(modal instanceof HTMLDialogElement)) return;
+
+    const form = document.getElementById('post-quick-edit-form');
+    const titleInput = document.getElementById('post-title');
+    const titleCount = document.getElementById('post-title-count');
+    const submitBtn = document.getElementById('post-submit-btn');
+    const editLink = document.getElementById('post-edit-link');
+    const cancelBtn = document.getElementById('post-cancel-btn');
+
+    let currentPostId = null;
+
+    const normalizeDateText = (value) => {
+      if (!value) return '-';
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? '-' : parsed.toLocaleDateString();
+    };
+
+    const updateTitleCount = (value) => {
+      if (titleCount) {
+        titleCount.textContent = String(value.length);
+      }
+    };
+
+    const refreshSession = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        return response.ok;
+      } catch {
+        return false;
+      }
+    };
+
+    const fetchWithRetry = async (url, options) => {
+      const firstAttempt = await fetch(url, { ...options, credentials: 'include' });
+      if (firstAttempt.status !== 401) return firstAttempt;
+      const refreshed = await refreshSession();
+      if (!refreshed) return firstAttempt;
+      return fetch(url, { ...options, credentials: 'include' });
+    };
+
+    if (titleInput) {
+      updateTitleCount(titleInput.value);
+      titleInput.addEventListener('input', (event) => {
+        const value = event.target instanceof HTMLInputElement ? event.target.value : '';
+        updateTitleCount(value);
+      });
+    }
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        if (typeof modal.close === 'function') {
+          modal.close();
+        } else {
+          modal.removeAttribute('open');
+        }
+      });
+    }
+
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        if (typeof modal.close === 'function') {
+          modal.close();
+        } else {
+          modal.removeAttribute('open');
+        }
+      }
+    });
+
+    window.openPostQuickEdit = (postId, title, status, createdAt, updatedAt) => {
+      currentPostId = postId;
+
+      if (titleInput instanceof HTMLInputElement) {
+        titleInput.value = title;
+        updateTitleCount(title);
+      }
+
+      const statusRadios = document.querySelectorAll('input[name="status"]');
+      statusRadios.forEach((radio) => {
+        if (radio instanceof HTMLInputElement) {
+          radio.checked = radio.value === status;
+        }
+      });
+
+      const createdEl = document.getElementById('post-created');
+      const updatedEl = document.getElementById('post-updated');
+      if (createdEl) createdEl.textContent = normalizeDateText(createdAt);
+      if (updatedEl) updatedEl.textContent = normalizeDateText(updatedAt);
+
+      if (editLink instanceof HTMLAnchorElement) {
+        editLink.href = `/admin/posts/${postId}/edit`;
+      }
+
+      if (form) {
+        form.classList.remove('error');
+      }
+
+      if (typeof modal.showModal === 'function') {
+        modal.showModal();
+      } else {
+        modal.setAttribute('open', 'true');
+      }
+    };
+
+    if (form instanceof HTMLFormElement && submitBtn instanceof HTMLButtonElement) {
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!currentPostId) return;
+
+        const formData = new FormData(form);
+        const title = formData.get('title');
+        const status = formData.get('status');
+
+        if (!title || String(title).trim().length === 0) {
+          alert('Title is required');
+          return;
+        }
+
+        submitBtn.disabled = true;
+        const originalLabel = submitBtn.textContent;
+        submitBtn.textContent = 'Saving...';
+
+        try {
+          const response = await fetchWithRetry(`${API_BASE}/posts/${currentPostId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, status })
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to update post');
+          }
+
+          if (typeof modal.close === 'function') {
+            modal.close();
+          } else {
+            modal.removeAttribute('open');
+          }
+
+          const toast = document.createElement('div');
+          toast.innerHTML = `
+            <div class="fixed top-4 right-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg max-w-sm opacity-100 transition-opacity duration-300" style="z-index: 9999;">
+              <div class="flex items-start gap-3">
+                <span class="text-lg font-bold">✓</span>
+                <p class="flex-grow text-sm">Post updated successfully</p>
+                <button type="button" class="text-green-600 hover:text-green-800 ml-2">✕</button>
+              </div>
+            </div>
+          `;
+          const toastElement = toast.firstElementChild;
+          if (toastElement) {
+            document.body.appendChild(toastElement);
+          }
+
+          const removeToast = () => {
+            if (toastElement) {
+              toastElement.classList.add('opacity-0');
+              setTimeout(() => toastElement.remove(), 200);
+            }
+          };
+
+          if (toastElement) {
+            const closeBtn = toastElement.querySelector('button');
+            if (closeBtn instanceof HTMLButtonElement) {
+              closeBtn.addEventListener('click', removeToast);
+            }
+          }
+
+          setTimeout(removeToast, 3000);
+
+          setTimeout(() => {
+            window.location.reload();
+          }, 800);
+        } catch (error) {
+          console.error('Failed to update post', error);
+          alert('Failed to update post. Please try again.');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalLabel;
+        }
+      });
+    }
+  })(document.currentScript);
+</script>
+
+<style>
+  .quick-edit-dialog {
+    border: none;
+    padding: 0;
+    background: transparent;
+  }
+
+  .quick-edit-dialog[open] {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: block;
+  }
+
+  .quick-edit-card {
+    background: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+    max-width: 28rem;
+    width: calc(100vw - 2rem);
+    padding: 1.5rem;
+  }
+
+  dialog::backdrop {
+    animation: fadeIn 0.2s ease-in-out;
+    background-color: rgba(0, 0, 0, 0.55);
+  }
+
+  dialog {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+</style>

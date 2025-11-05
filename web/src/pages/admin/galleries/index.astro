@@ -1,0 +1,140 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getGalleries, deleteGallery } from '../../../utils/api';
+import { formatDate } from '../../../utils/markdown';
+import ConfirmDialog from '../../../components/ConfirmDialog.astro';
+import GalleryQuickEditModal from '../../../components/GalleryQuickEditModal.astro';
+
+// Fetch all galleries
+const galleriesResult = await getGalleries(1, 100);
+const galleries = galleriesResult.success ? galleriesResult.data || [] : [];
+---
+
+<AdminLayout pageTitle="Manage Galleries">
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Galleries</h1>
+        <p class="text-gray-600 mt-2">Manage your image galleries</p>
+      </div>
+      <a
+        href="/admin/galleries/new"
+        class="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+      >
+        + New Gallery
+      </a>
+    </div>
+
+    {galleries.length > 0 ? (
+      <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Title</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Images</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Created</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            {galleries.map(gallery => (
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4">
+                  <p class="font-medium text-gray-900">{gallery.title}</p>
+                </td>
+                <td class="px-6 py-4 text-gray-600 text-sm">
+                  {(gallery.imageCount ?? gallery.images?.length ?? 0)} images
+                </td>
+                <td class="px-6 py-4 text-gray-600 text-sm">{formatDate(gallery.createdAt)}</td>
+                <td class="px-6 py-4">
+                  <div class="flex gap-2">
+                    <button
+                      type="button"
+                      class="px-3 py-1 text-sm bg-blue-100 text-blue-900 rounded hover:bg-blue-200 transition-colors"
+                      onclick={`openGalleryQuickEdit(${JSON.stringify(gallery.id)}, ${JSON.stringify(gallery.title)}, ${JSON.stringify(gallery.status || 'draft')}, ${JSON.stringify(gallery.imageCount ?? gallery.images?.length ?? 0)}, ${JSON.stringify(gallery.createdAt || '')}, ${JSON.stringify(gallery.updatedAt || gallery.createdAt || '')})`}
+                    >
+                      Quick Edit
+                    </button>
+                    <a
+                      href={`/galleries/${gallery.slug}`}
+                      target="_blank"
+                      class="px-3 py-1 text-sm bg-gray-100 text-gray-900 rounded hover:bg-gray-200 transition-colors"
+                    >
+                      View
+                    </a>
+                    <button
+                      type="button"
+                      class="px-3 py-1 text-sm bg-red-100 text-red-900 rounded hover:bg-red-200 transition-colors"
+                      data-gallery-delete-id={gallery.id}
+                    >
+                      Delete
+                    </button>
+                    <ConfirmDialog
+                      id={`delete-gallery-${gallery.id}`}
+                      title="Delete Gallery"
+                      message={`Are you sure you want to delete "${gallery.title}" and all its images? This action cannot be undone.`}
+                      confirmText="Delete"
+                      cancelText="Cancel"
+                      isDangerous={true}
+                    />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div class="bg-white rounded-lg shadow-md p-12 text-center">
+        <p class="text-gray-500 mb-4">No galleries yet. Create your first gallery to get started!</p>
+        <a
+          href="/admin/galleries/new"
+          class="inline-block px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+        >
+          Create Gallery
+        </a>
+      </div>
+    )}
+  </div>
+
+  <!-- Quick Edit Modal -->
+  <GalleryQuickEditModal />
+
+  <script>
+    const deleteButtons = Array.from(document.querySelectorAll('[data-gallery-delete-id]'));
+
+    deleteButtons.forEach((button) => {
+      if (button.dataset.galleryDeleteBound === 'true') return;
+
+      button.addEventListener('click', () => {
+        const galleryId = button.getAttribute('data-gallery-delete-id');
+        const dialogId = `delete-gallery-${galleryId}`;
+
+        if (typeof window.showConfirmDialog !== 'function') {
+          console.error('Confirm dialog helper is not available');
+          return;
+        }
+
+        window.showConfirmDialog(dialogId, async () => {
+          try {
+            const response = await fetch(`/api/galleries/${galleryId}`, {
+              method: 'DELETE',
+              credentials: 'include'
+            });
+            if (!response.ok) {
+              const errorJson = await response.json().catch(() => null);
+              const message = (errorJson && (errorJson.error || errorJson.message)) || 'Failed to delete gallery';
+              throw new Error(message);
+            }
+            window.location.reload();
+          } catch (error) {
+            console.error('Failed to delete gallery', error);
+            alert(error instanceof Error ? error.message : 'Failed to delete gallery');
+          }
+        });
+      });
+
+      button.dataset.galleryDeleteBound = 'true';
+    });
+  </script>
+</AdminLayout>

@@ -1,0 +1,63 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ImageGrid from '../../components/ImageGrid.astro';
+import { getGallery } from '../../utils/api';
+import { formatDate } from '../../utils/markdown';
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/galleries');
+}
+
+const galleryResult = await getGallery(slug);
+
+if (!galleryResult.success || !galleryResult.data) {
+  return Astro.redirect('/galleries');
+}
+
+const gallery = galleryResult.data;
+const images = gallery.images || [];
+---
+
+<BaseLayout pageTitle={gallery.title} description={gallery.description}>
+  <!-- Gallery Header -->
+  <section class="bg-gradient-to-br from-gray-50 to-gray-100 py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+        {gallery.title}
+      </h1>
+
+      {gallery.description && (
+        <p class="text-xl text-gray-600 mb-4">
+          {gallery.description}
+        </p>
+      )}
+
+      <div class="flex items-center gap-4 text-gray-600">
+        <span>{images.length} {images.length === 1 ? 'image' : 'images'}</span>
+        <span>•</span>
+        <time datetime={gallery.createdAt}>
+          Created {formatDate(gallery.createdAt)}
+        </time>
+      </div>
+    </div>
+  </section>
+
+  <!-- Gallery Images -->
+  <section class="py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <ImageGrid images={images} columns={3} />
+
+      <!-- Navigation -->
+      <div class="mt-12 pt-8 border-t border-gray-200 text-center">
+        <a
+          href="/galleries"
+          class="inline-block text-gray-600 hover:text-gray-900 font-medium transition-colors"
+        >
+          ← Back to all galleries
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,375 @@
+---
+import FormField from './FormField.astro';
+import PublishControls from './PublishControls.astro';
+import MarkdownPreview from './MarkdownPreview.astro';
+import FormAlert from './FormAlert.astro';
+
+export interface Props {
+  post?: {
+    id?: number;
+    title: string;
+    slug: string;
+    content: string;
+    excerpt?: string;
+    status?: 'draft' | 'published';
+    scheduledDate?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    tags?: any[];
+  };
+  onSubmit?: string;
+  submitText?: string;
+  isLoading?: boolean;
+}
+
+const {
+  post = {
+    title: '',
+    slug: '',
+    content: '',
+    excerpt: '',
+    status: 'draft',
+    scheduledDate: '',
+    tags: []
+  },
+  onSubmit = '/admin/posts',
+  submitText = 'Publish Post',
+  isLoading = false
+} = Astro.props;
+---
+
+<form id="post-form" method="POST" action={onSubmit} class="space-y-6">
+  <!-- Success/Error Messages -->
+  <div id="form-alerts" class="space-y-4"></div>
+
+  <!-- Main Content Area -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Left Column: Editor (2/3 width) -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Title Field -->
+      <FormField
+        id="title"
+        label="Post Title"
+        type="text"
+        placeholder="Your amazing blog post"
+        required={true}
+        maxLength={200}
+        value={post.title}
+        help="Create a descriptive title for your post"
+      />
+
+      <!-- Slug Field -->
+      <div>
+        <label for="slug" class="block text-sm font-medium text-gray-700 mb-2">
+          URL Slug <span class="text-gray-500 font-normal">(auto-generated from title)</span>
+        </label>
+        <div class="flex gap-2">
+          <input
+            type="text"
+            id="slug"
+            name="slug"
+            value={post.slug}
+            class="flex-grow px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            required
+          />
+          <button
+            type="button"
+            id="regenerate-slug-btn"
+            class="px-4 py-2 bg-gray-200 text-gray-900 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+          >
+            Regenerate
+          </button>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">
+          Slug is used in the URL for your post
+        </p>
+      </div>
+
+      <!-- Markdown Editor with Preview -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Content</label>
+        <MarkdownPreview
+          initialContent={post.content}
+          placeholder="Write your post in markdown..."
+        />
+        <textarea
+          id="content"
+          name="content"
+          value={post.content}
+          style="display: none;"
+        >
+          {post.content}
+        </textarea>
+      </div>
+
+      <!-- Excerpt Field -->
+      <FormField
+        id="excerpt"
+        label="Excerpt"
+        type="textarea"
+        placeholder="Brief summary of your post"
+        rows={3}
+        maxLength={300}
+        value={post.excerpt}
+        help="Leave empty to auto-generate from content. Used in blog listings."
+      />
+    </div>
+
+    <!-- Right Column: Sidebar (1/3 width) -->
+    <div class="lg:col-span-1 space-y-6">
+      <!-- Publishing Controls -->
+      <PublishControls
+        status={post.status || 'draft'}
+        scheduledDate={post.scheduledDate}
+        createdAt={post.createdAt}
+        updatedAt={post.updatedAt}
+      />
+
+      <!-- Hidden Fields -->
+      <input type="hidden" name="status" value={post.status || 'draft'} />
+      <input type="hidden" name="scheduledDate" value={post.scheduledDate || ''} />
+
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        id="submit-btn"
+        class={`w-full px-6 py-3 rounded-lg text-white font-medium transition-colors ${
+          isLoading
+            ? 'bg-gray-400 cursor-not-allowed'
+            : 'bg-gray-900 hover:bg-gray-800'
+        }`}
+        disabled={isLoading}
+      >
+        {isLoading ? 'Publishing...' : submitText}
+      </button>
+
+      <!-- Auto-save Indicator -->
+      <div id="autosave-indicator" class="text-xs text-gray-500 text-center py-2">
+        Changes saved automatically
+      </div>
+
+      <!-- Draft Info -->
+      {post.createdAt && (
+        <div class="bg-gray-50 rounded-lg p-4 text-sm text-gray-600 space-y-1">
+          <p>
+            <strong>Created:</strong> <time datetime={post.createdAt}>{new Date(post.createdAt).toLocaleDateString()}</time>
+          </p>
+          {post.updatedAt && post.updatedAt !== post.createdAt && (
+            <p>
+              <strong>Updated:</strong> <time datetime={post.updatedAt}>{new Date(post.updatedAt).toLocaleDateString()}</time>
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
+</form>
+
+<script type="module" lang="ts">
+  import { generateSlug, generateExcerpt, validateTitle, validateSlug, validateContent } from '../utils/forms';
+  import { debounce } from '../utils/forms';
+  import { saveDraft, loadDraft, draftExists, clearDraft, setupAutoSave } from '../utils/localStorage';
+  import { fetchWithAuth } from '../utils/auth';
+
+  const form = document.getElementById('post-form') as HTMLFormElement;
+  const titleInput = document.getElementById('title') as HTMLInputElement;
+  const slugInput = document.getElementById('slug') as HTMLInputElement;
+  const contentInput = document.querySelector('textarea[name="content"]') as HTMLTextAreaElement;
+  const excerptInput = document.getElementById('excerpt') as HTMLTextAreaElement;
+  const regenerateBtn = document.getElementById('regenerate-slug-btn');
+  const autosaveIndicator = document.getElementById('autosave-indicator');
+  const submitBtn = document.getElementById('submit-btn');
+  const alertsContainer = document.getElementById('form-alerts');
+
+  let isDirty = false;
+
+  // Check for draft on page load
+  const draftKey = `post_${form.getAttribute('data-post-id') || 'new'}`;
+  const draft = loadDraft(draftKey);
+
+  if (draft && draftExists(draftKey)) {
+    if (confirm('You have an unsaved draft. Would you like to restore it?')) {
+      titleInput.value = draft.data.title || '';
+      slugInput.value = draft.data.slug || '';
+      contentInput.value = draft.data.content || '';
+      excerptInput.value = draft.data.excerpt || '';
+    }
+  }
+
+  // Auto-generate slug from title
+  const debouncedSlugGenerate = debounce(() => {
+    if (!slugInput.hasAttribute('data-manual')) {
+      const newSlug = generateSlug(titleInput.value);
+      slugInput.value = newSlug;
+    }
+  }, 300);
+
+  titleInput.addEventListener('input', () => {
+    debouncedSlugGenerate();
+    isDirty = true;
+  });
+
+  // Allow manual slug editing
+  slugInput.addEventListener('input', () => {
+    slugInput.setAttribute('data-manual', 'true');
+  });
+
+  // Regenerate slug button
+  if (regenerateBtn) {
+    regenerateBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      slugInput.removeAttribute('data-manual');
+      const newSlug = generateSlug(titleInput.value);
+      slugInput.value = newSlug;
+    });
+  }
+
+  // Auto-generate excerpt
+  const debouncedExcerptGenerate = debounce(() => {
+    if (!excerptInput.hasAttribute('data-manual')) {
+      const excerpt = generateExcerpt(contentInput.value, 300);
+      excerptInput.value = excerpt;
+    }
+  }, 500);
+
+  contentInput.addEventListener('input', () => {
+    debouncedExcerptGenerate();
+    isDirty = true;
+  });
+
+  // Allow manual excerpt editing
+  excerptInput.addEventListener('input', () => {
+    excerptInput.setAttribute('data-manual', 'true');
+  });
+
+  // Setup auto-save
+  const getFormData = () => ({
+    title: titleInput.value,
+    slug: slugInput.value,
+    content: contentInput.value,
+    excerpt: excerptInput.value
+  });
+
+  const stopAutoSave = setupAutoSave(draftKey, getFormData, 10000);
+
+  // Handle form submission
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Validate form
+    const titleValidation = validateTitle(titleInput.value);
+    const slugValidation = validateSlug(slugInput.value);
+    const contentValidation = validateContent(contentInput.value);
+
+    if (!titleValidation.valid || !slugValidation.valid || !contentValidation.valid) {
+      const errors = [titleValidation, slugValidation, contentValidation]
+        .filter(v => !v.valid)
+        .map(v => v.error);
+
+      if (alertsContainer) {
+        alertsContainer.innerHTML = `
+          <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+            <p class="font-medium mb-2">Please fix the following errors:</p>
+            <ul class="list-disc list-inside space-y-1 text-sm">
+              ${errors.map(err => `<li>${err}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+      return;
+    }
+
+    // Clear previous alerts
+    if (alertsContainer) {
+      alertsContainer.innerHTML = '';
+    }
+
+    // Disable submit button
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Publishing...';
+    }
+
+    // Get form data
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+
+    try {
+      // Mock API call - replace with actual API call
+      const apiBase = import.meta.env.PUBLIC_API_URL || 'http://localhost:8787/api';
+      const postId = form.getAttribute('data-post-id');
+      const endpoint = postId ? `${apiBase}/posts/${postId}` : `${apiBase}/posts`;
+      const method = postId ? 'PUT' : 'POST';
+
+      const response = await fetchWithAuth(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save post');
+      }
+
+      // Success
+      clearDraft(draftKey);
+      if (alertsContainer) {
+        alertsContainer.innerHTML = `
+          <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+            Post saved successfully! Redirecting...
+          </div>
+        `;
+      }
+
+      // Redirect after 1 second
+      setTimeout(() => {
+        window.location.href = '/admin/posts';
+      }, 1000);
+    } catch (error) {
+      if (alertsContainer) {
+        alertsContainer.innerHTML = `
+          <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+            Error saving post: ${error instanceof Error ? error.message : 'Unknown error'}
+          </div>
+        `;
+      }
+
+      // Re-enable submit button
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Try Again';
+      }
+    }
+  });
+
+  // Show unsaved changes warning
+  window.addEventListener('beforeunload', (e) => {
+    if (isDirty) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
+
+  // Cleanup auto-save on page unload
+  window.addEventListener('unload', () => {
+    stopAutoSave();
+  });
+
+  // Listen for draft save events
+  window.addEventListener('draft-saved', () => {
+    if (autosaveIndicator) {
+      const now = new Date();
+      const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      autosaveIndicator.textContent = `Auto-saved at ${time}`;
+      autosaveIndicator.classList.remove('text-red-500');
+      autosaveIndicator.classList.add('text-green-600');
+
+      setTimeout(() => {
+        autosaveIndicator.classList.remove('text-green-600');
+        autosaveIndicator.classList.add('text-gray-500');
+      }, 3000);
+    }
+  });
+</script>

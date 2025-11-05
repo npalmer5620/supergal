@@ -1,0 +1,154 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+
+interface Props {
+  pageTitle: string;
+  description?: string;
+}
+
+const { pageTitle, description = 'SuperGal Admin' } = Astro.props;
+const apiBase = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:8787/api';
+
+// Check authentication
+// Note: This runs on the server, redirects happen via Astro middleware in a real app
+// For now, we rely on client-side auth checks
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <title>{pageTitle} | SuperGal Admin</title>
+  </head>
+  <body class="bg-gray-100 text-gray-900">
+    <Header />
+
+    <div class="flex min-h-[calc(100vh-80px)]">
+      <!-- Admin Sidebar -->
+      <aside class="w-64 bg-gray-900 text-white hidden md:block">
+        <nav class="p-6 space-y-2">
+          <h3 class="text-sm font-semibold text-gray-400 uppercase mb-4">Admin</h3>
+
+          <a
+            href="/admin"
+            class="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Dashboard
+          </a>
+          <a
+            href="/admin/posts"
+            class="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Posts
+          </a>
+          <a
+            href="/admin/galleries"
+            class="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Galleries
+          </a>
+          <a
+            href="/admin/images"
+            class="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Images
+          </a>
+          <a
+            href="/admin/tags"
+            class="block px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Tags
+          </a>
+
+          <hr class="border-gray-800 my-4" />
+
+          <button
+            type="button"
+            id="logout-btn"
+            class="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors text-red-400"
+          >
+            Logout
+          </button>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-grow">
+        <div class="bg-white border-b border-gray-200 px-6 py-4 md:hidden flex justify-between items-center">
+          <h2 class="text-lg font-semibold">{pageTitle}</h2>
+          <button id="mobile-menu-toggle" class="text-gray-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="p-6">
+          <slot />
+        </div>
+      </main>
+    </div>
+
+    <Footer />
+
+    <script is:inline data-api-base={apiBase}>
+      ((scriptEl) => {
+        if (!(scriptEl instanceof HTMLScriptElement)) return;
+
+        const API_BASE = scriptEl.dataset.apiBase || 'http://localhost:8787/api';
+
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+          logoutBtn.addEventListener('click', async () => {
+            try {
+              await fetch(`${API_BASE}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+              });
+            } catch (error) {
+              console.error('Logout failed', error);
+            } finally {
+              window.location.href = '/login';
+            }
+          });
+        }
+
+        const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+        if (mobileMenuToggle) {
+          mobileMenuToggle.addEventListener('click', () => {
+            console.log('Mobile menu toggle');
+          });
+        }
+
+        const checkAuth = async () => {
+          try {
+            const response = await fetch(`${API_BASE}/auth/session`, {
+              method: 'GET',
+              credentials: 'include'
+            });
+
+            if (!response.ok) {
+              window.location.href = '/login';
+            }
+          } catch (error) {
+            console.error('Auth check failed:', error);
+            window.location.href = '/login';
+          }
+        };
+
+        checkAuth();
+      })(document.currentScript);
+    </script>
+  </body>
+</html>

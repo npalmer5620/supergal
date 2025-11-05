@@ -1,0 +1,36 @@
+# docker-compose.yml
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    environment:
+      # override if you like
+      - PORT=8787
+      - DB_PATH=/data/app.db
+      - UPLOAD_DIR=/uploads
+      - SESSION_SECRET=${SESSION_SECRET:?set_a_secret}
+    ports:
+      - "8787:8787"
+    volumes:
+      # Named volumes (persist across rebuilds)
+      - api_data:/data
+      - api_uploads:/uploads
+    restart: unless-stopped
+    user: "1000:1000"
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    environment:
+      - API_BASE_URL=http://api:8787
+    ports:
+      - "4321:4321"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  api_data:
+  api_uploads:

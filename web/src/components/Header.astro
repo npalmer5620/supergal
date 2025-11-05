@@ -1,0 +1,95 @@
+---
+// Header component with navigation
+const currentPath = new URL(Astro.request.url).pathname;
+
+const navItems = [
+  { label: 'Home', href: '/' },
+  { label: 'Blog', href: '/blog' },
+  { label: 'Gallery', href: '/galleries' }
+];
+---
+
+<header class="bg-white border-b border-gray-200">
+  <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div class="flex justify-between items-center">
+      <div class="flex items-center">
+        <a href="/" class="text-2xl font-bold text-gray-900">SuperGal</a>
+      </div>
+
+      <div class="hidden md:flex space-x-8">
+        {navItems.map(item => (
+          <a
+            href={item.href}
+            class={`${
+              currentPath === item.href
+                ? 'text-gray-900 border-b-2 border-gray-900'
+                : 'text-gray-600 hover:text-gray-900'
+            } pb-1 transition-colors`}
+          >
+            {item.label}
+          </a>
+        ))}
+        <a
+          href="/login"
+          class="text-gray-600 hover:text-gray-900 pb-1 transition-colors"
+        >
+          Admin
+        </a>
+      </div>
+
+      <div class="md:hidden">
+        <button
+          id="mobile-menu-btn"
+          class="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="hidden md:hidden mt-4 space-y-2">
+      {navItems.map(item => (
+        <a
+          href={item.href}
+          class={`block px-3 py-2 rounded-md text-base font-medium ${
+            currentPath === item.href
+              ? 'text-gray-900 bg-gray-100'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+          }`}
+        >
+          {item.label}
+        </a>
+      ))}
+      <a
+        href="/login"
+        class="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+      >
+        Admin
+      </a>
+    </div>
+  </nav>
+</header>
+
+<script>
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+
+  if (mobileMenuBtn && mobileMenu) {
+    mobileMenuBtn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+  }
+</script>

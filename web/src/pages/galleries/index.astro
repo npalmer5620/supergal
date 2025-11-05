@@ -1,0 +1,55 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import GalleryCard from '../../components/GalleryCard.astro';
+import Pagination from '../../components/Pagination.astro';
+import { getGalleries } from '../../utils/api';
+
+const GALLERIES_PER_PAGE = 12;
+const currentPage = parseInt(Astro.url.searchParams.get('page') || '1');
+
+// Fetch galleries for current page
+const galleriesResult = await getGalleries(currentPage, GALLERIES_PER_PAGE);
+const galleries = galleriesResult.success ? galleriesResult.data || [] : [];
+
+// Calculate total pages
+const totalPages = Math.ceil(galleries.length / GALLERIES_PER_PAGE) || 1;
+---
+
+<BaseLayout pageTitle="Galleries" description="Browse our image galleries">
+  <!-- Page Header -->
+  <section class="bg-gradient-to-br from-gray-50 to-gray-100 py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h1 class="text-4xl font-bold text-gray-900 mb-4">Galleries</h1>
+      <p class="text-xl text-gray-600">Explore our curated image collections</p>
+    </div>
+  </section>
+
+  <!-- Galleries Grid -->
+  <section class="py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      {galleries.length > 0 ? (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {galleries.map(gallery => (
+            <GalleryCard
+              title={gallery.title}
+              slug={gallery.slug}
+              description={gallery.description}
+              imageCount={gallery.imageCount ?? gallery.images?.length ?? 0}
+              thumbnailUrl={gallery.images?.[0]?.urls?.thumbnail500 || gallery.images?.[0]?.urls?.original}
+            />
+          ))}
+        </div>
+      ) : (
+        <div class="py-12 text-center">
+          <p class="text-gray-500 text-lg">No galleries found.</p>
+        </div>
+      )}
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        baseUrl="/galleries"
+      />
+    </div>
+  </section>
+</BaseLayout>

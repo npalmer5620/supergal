@@ -1,0 +1,98 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostCard from '../components/PostCard.astro';
+import GalleryCard from '../components/GalleryCard.astro';
+import SearchBar from '../components/SearchBar.astro';
+import { getPosts, getGalleries } from '../utils/api';
+import { getExcerpt, getReadingTime } from '../utils/markdown';
+
+// Fetch featured content
+const postsResult = await getPosts(1, 6);
+const galleriesResult = await getGalleries(1, 6);
+
+const posts = postsResult.success ? postsResult.data || [] : [];
+const galleries = galleriesResult.success ? galleriesResult.data || [] : [];
+---
+
+<BaseLayout pageTitle="Home" description="Explore blog posts and image galleries">
+  <!-- Hero Section -->
+  <section class="bg-gradient-to-br from-gray-50 to-gray-100 py-16">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+        Welcome to SuperGal
+      </h1>
+      <p class="text-xl text-gray-600 mb-8">
+        Explore beautiful markdown blogs and image galleries
+      </p>
+      <div class="flex justify-center">
+        <SearchBar />
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Posts Section -->
+  <section class="py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-3xl font-bold text-gray-900">Latest Posts</h2>
+        <a
+          href="/blog"
+          class="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+        >
+          View all →
+        </a>
+      </div>
+
+      {posts.length > 0 ? (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {posts.map(post => (
+            <PostCard
+              title={post.title}
+              slug={post.slug}
+              excerpt={post.excerpt || getExcerpt(post.content)}
+              createdAt={post.createdAt}
+              readingTime={getReadingTime(post.content)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div class="py-12 text-center text-gray-500">
+          <p>No posts yet. Check back soon!</p>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- Featured Galleries Section -->
+  <section class="py-12 bg-gray-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-3xl font-bold text-gray-900">Featured Galleries</h2>
+        <a
+          href="/galleries"
+          class="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+        >
+          View all →
+        </a>
+      </div>
+
+      {galleries.length > 0 ? (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {galleries.map(gallery => (
+            <GalleryCard
+              title={gallery.title}
+              slug={gallery.slug}
+              description={gallery.description}
+              imageCount={gallery.imageCount ?? gallery.images?.length ?? 0}
+              thumbnailUrl={gallery.images?.[0]?.urls?.thumbnail500 || gallery.images?.[0]?.urls?.original}
+            />
+          ))}
+        </div>
+      ) : (
+        <div class="py-12 text-center text-gray-500">
+          <p>No galleries yet. Check back soon!</p>
+        </div>
+      )}
+    </div>
+  </section>
+</BaseLayout>

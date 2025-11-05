@@ -1,0 +1,52 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import GalleryForm from '../../../../components/GalleryForm.astro';
+import { getGallery } from '../../../../utils/api';
+
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/admin/galleries');
+}
+
+// Fetch gallery data
+const galleryResult = await getGallery(id);
+
+if (!galleryResult.success || !galleryResult.data) {
+  return Astro.redirect('/admin/galleries');
+}
+
+const gallery = galleryResult.data;
+const pageTitle = `Edit Gallery: ${gallery.title}`;
+---
+
+<AdminLayout pageTitle={pageTitle}>
+  <div class="space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">{pageTitle}</h1>
+        <p class="text-gray-600 mt-2">Update your image gallery</p>
+      </div>
+      <a
+        href={`/galleries/${gallery.slug}`}
+        target="_blank"
+        class="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+      >
+        View Gallery →
+      </a>
+    </div>
+
+    <GalleryForm
+      gallery={gallery}
+      submitText="Update Gallery"
+    />
+  </div>
+</AdminLayout>
+
+<script define:vars={{ galleryId: id }}>
+  // Pass gallery ID to form for API submission
+  const form = document.getElementById('gallery-form');
+  if (form) {
+    form.setAttribute('data-gallery-id', galleryId);
+  }
+</script>

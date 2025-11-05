@@ -1,0 +1,83 @@
+---
+export interface Props {
+  id: string;
+  type?: 'success' | 'error' | 'info';
+  message: string;
+  duration?: number;
+}
+
+const {
+  id,
+  type = 'success',
+  message,
+  duration = 3000
+} = Astro.props;
+
+const bgColor = {
+  success: 'bg-green-50',
+  error: 'bg-red-50',
+  info: 'bg-blue-50'
+}[type];
+
+const borderColor = {
+  success: 'border-green-200',
+  error: 'border-red-200',
+  info: 'border-blue-200'
+}[type];
+
+const textColor = {
+  success: 'text-green-800',
+  error: 'text-red-800',
+  info: 'text-blue-800'
+}[type];
+
+const icon = {
+  success: '✓',
+  error: '✕',
+  info: 'ℹ'
+}[type];
+---
+
+<div
+  id={id}
+  class={`fixed top-4 right-4 ${bgColor} border ${borderColor} ${textColor} px-4 py-3 rounded-lg shadow-lg max-w-sm opacity-0 transition-opacity duration-300 pointer-events-none`}
+  role="alert"
+  data-duration={duration}
+>
+  <div class="flex items-start gap-3">
+    <span class="text-lg font-bold flex-shrink-0">{icon}</span>
+    <p class="flex-grow text-sm">{message}</p>
+    <button
+      type="button"
+      class="flex-shrink-0 ml-2 hover:opacity-70 transition-opacity"
+      onclick="document.getElementById('{id}').style.opacity='0'"
+      aria-label="Dismiss notification"
+    >
+      ✕
+    </button>
+  </div>
+</div>
+
+<script define:vars={{ toastId: id, duration }}>
+  // Show toast
+  const toast = document.getElementById(toastId);
+  if (toast) {
+    // Trigger show animation
+    setTimeout(() => {
+      toast.style.opacity = '1';
+      toast.style.pointerEvents = 'auto';
+    }, 10);
+
+    // Auto-hide after duration
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.pointerEvents = 'none';
+    }, duration);
+  }
+</script>
+
+<style>
+  div {
+    z-index: 9999;
+  }
+</style>

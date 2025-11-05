@@ -1,0 +1,168 @@
+---
+import { getTags } from '../utils/api';
+
+export interface Props {
+  selectedTagIds?: number[];
+}
+
+const { selectedTagIds = [] } = Astro.props;
+
+// Fetch available tags
+const tagsResult = await getTags();
+const allTags = tagsResult.success ? tagsResult.data || [] : [];
+---
+
+<div class="space-y-4">
+  <label class="block text-sm font-medium text-gray-700">Tags</label>
+
+  <!-- Available Tags -->
+  <div class="bg-white border border-gray-200 rounded-lg p-4">
+    <div class="space-y-2 max-h-64 overflow-y-auto">
+      {allTags.length > 0 ? (
+        allTags.map(tag => (
+          <label key={tag.id} class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
+            <input
+              type="checkbox"
+              name="tags"
+              value={tag.id}
+              checked={selectedTagIds.includes(tag.id)}
+              class="w-4 h-4 text-gray-900 rounded"
+            />
+            <span class="text-sm text-gray-700">{tag.name}</span>
+            <span class="text-xs text-gray-500 ml-auto">/{tag.slug}</span>
+          </label>
+        ))
+      ) : (
+        <p class="text-sm text-gray-500">No tags available</p>
+      )}
+    </div>
+  </div>
+
+  <!-- Create New Tag -->
+  <div class="space-y-2">
+    <label for="new-tag" class="text-sm text-gray-600">Create new tag</label>
+    <div class="flex gap-2">
+      <input
+        type="text"
+        id="new-tag"
+        placeholder="Enter new tag name"
+        class="flex-grow px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+      />
+      <button
+        type="button"
+        id="add-tag-btn"
+        class="px-3 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+      >
+        Add
+      </button>
+    </div>
+  </div>
+
+  <!-- Selected Tags Display -->
+  <div id="selected-tags" class="space-y-2">
+    <p class="text-xs text-gray-500">Selected tags:</p>
+    <div id="selected-tags-list" class="flex flex-wrap gap-2">
+      <!-- Selected tags will appear here -->
+    </div>
+  </div>
+
+  <!-- Hidden field for form submission -->
+  <input type="hidden" id="tags-field" name="tags" value={selectedTagIds.join(',')} />
+</div>
+
+<script lang="ts">
+  const checkboxes = document.querySelectorAll('input[name="tags"]');
+  const tagsField = document.getElementById('tags-field') as HTMLInputElement;
+  const selectedTagsList = document.getElementById('selected-tags-list');
+  const newTagInput = document.getElementById('new-tag') as HTMLInputElement;
+  const addTagBtn = document.getElementById('add-tag-btn');
+
+  function updateSelectedTags() {
+    const selected = Array.from(checkboxes)
+      .filter((cb: any) => cb.checked)
+      .map((cb: any) => cb.value);
+
+    tagsField.value = selected.join(',');
+
+    // Update display
+    if (selectedTagsList) {
+      if (selected.length === 0) {
+        selectedTagsList.innerHTML = '<p class="text-xs text-gray-500">No tags selected</p>';
+      } else {
+        selectedTagsList.innerHTML = selected
+          .map(
+            tagId =>
+              `<span class="inline-block px-2 py-1 bg-gray-100 text-gray-900 rounded text-xs">
+                ${document.querySelector(`input[value="${tagId}"]`)?.nextElementSibling?.textContent || 'Unknown'}
+                <button type="button" onclick="removeTag('${tagId}')" class="ml-1 hover:text-red-600">✕</button>
+              </span>`
+          )
+          .join('');
+      }
+    }
+  }
+
+  // Handle tag checkbox changes
+  checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', updateSelectedTags);
+  });
+
+  // Handle adding new tags
+  if (addTagBtn) {
+    addTagBtn.addEventListener('click', async () => {
+      const tagName = newTagInput.value.trim();
+
+      if (!tagName) {
+        alert('Please enter a tag name');
+        return;
+      }
+
+      // Note: Implement create tag endpoint in API
+      // For now, just add to the list locally
+      const newLabel = document.createElement('label');
+      newLabel.className = 'flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded';
+      newLabel.innerHTML = `
+        <input type="checkbox" name="tags" value="${Date.now()}" class="w-4 h-4 text-gray-900 rounded" />
+        <span class="text-sm text-gray-700">${tagName}</span>
+        <span class="text-xs text-gray-500 ml-auto">${tagName.toLowerCase().replace(/\s+/g, '-')}</span>
+      `;
+
+      const tagsContainer = document.querySelector('[role="group"]')?.parentElement;
+      if (tagsContainer) {
+        tagsContainer.insertBefore(newLabel, tagsContainer.querySelector('#new-tag')?.parentElement);
+      }
+
+      newTagInput.value = '';
+
+      // Add event listener to new checkbox
+      const newCheckbox = newLabel.querySelector('input');
+      if (newCheckbox) {
+        newCheckbox.addEventListener('change', updateSelectedTags);
+        newCheckbox.checked = true;
+        updateSelectedTags();
+      }
+    });
+  }
+
+  // Remove tag from selected
+  (window as any).removeTag = function(tagId: string) {
+    const checkbox = document.querySelector(`input[value="${tagId}"]`) as HTMLInputElement;
+    if (checkbox) {
+      checkbox.checked = false;
+      updateSelectedTags();
+    }
+  };
+
+  // Handle Enter key in new tag input
+  if (newTagInput) {
+    newTagInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addTagBtn?.click();
+      }
+    });
+  }
+
+  // Initial update
+  updateSelectedTags();
+</script>

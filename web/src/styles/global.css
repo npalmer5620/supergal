@@ -1,0 +1,172 @@
+@import "tailwindcss";
+
+@layer components {
+  .prose {
+    @apply text-gray-700;
+  }
+
+  .prose h2 {
+    @apply text-2xl font-bold text-gray-900 mt-8 mb-4;
+  }
+
+  .prose h3 {
+    @apply text-xl font-bold text-gray-900 mt-6 mb-3;
+  }
+
+  .prose p {
+    @apply mb-4 leading-7;
+  }
+
+  .prose ul,
+  .prose ol {
+    @apply ml-6 mb-4;
+  }
+
+  .prose li {
+    @apply mb-2;
+  }
+
+  .prose code {
+    @apply bg-gray-100 px-2 py-1 rounded text-sm font-mono;
+  }
+
+  .prose pre {
+    @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto mb-4;
+  }
+
+  .prose pre code {
+    @apply bg-transparent px-0 py-0 text-white;
+  }
+
+  .prose a {
+    @apply text-gray-900 hover:text-gray-600 underline transition-colors;
+  }
+
+  .prose blockquote {
+    @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4;
+  }
+
+  .prose img {
+    @apply rounded-lg my-6;
+  }
+
+  .prose table {
+    @apply border-collapse border border-gray-300 w-full my-4;
+  }
+
+  .prose th,
+  .prose td {
+    @apply border border-gray-300 px-4 py-2;
+  }
+
+  .prose th {
+    @apply bg-gray-100 font-semibold;
+  }
+
+  /* ImageSelector styles */
+  label:has(input[type="checkbox"]:checked) {
+    @apply ring-2 ring-blue-500 rounded-lg;
+  }
+
+  /* MarkdownPreview styles */
+  #markdown-preview {
+    @apply text-gray-700;
+  }
+
+  #markdown-preview h2 {
+    @apply text-xl font-bold text-gray-900 mt-4 mb-2;
+  }
+
+  #markdown-preview h3 {
+    @apply text-lg font-bold text-gray-900 mt-3 mb-2;
+  }
+
+  #markdown-preview p {
+    @apply mb-3 leading-7;
+  }
+
+  #markdown-preview ul,
+  #markdown-preview ol {
+    @apply ml-4 mb-3;
+  }
+
+  #markdown-preview li {
+    @apply mb-1;
+  }
+
+  #markdown-preview code {
+    @apply bg-gray-100 px-2 py-1 rounded text-sm font-mono;
+  }
+
+  #markdown-preview pre {
+    @apply bg-gray-900 text-gray-100 p-3 rounded mb-3 overflow-x-auto;
+  }
+
+  #markdown-preview pre code {
+    @apply bg-transparent px-0 py-0 text-white;
+  }
+
+  #markdown-preview a {
+    @apply text-gray-900 hover:text-gray-600 underline transition-colors;
+  }
+
+  #markdown-preview blockquote {
+    @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-3;
+  }
+
+  #markdown-preview img {
+    @apply rounded-lg my-3 max-w-full;
+  }
+
+  #markdown-preview table {
+    @apply border-collapse border border-gray-300 w-full my-3;
+  }
+
+  #markdown-preview th,
+  #markdown-preview td {
+    @apply border border-gray-300 px-3 py-2 text-sm;
+  }
+
+  #markdown-preview th {
+    @apply bg-gray-100 font-semibold;
+  }
+
+  /* Mobile preview styles */
+  #markdown-preview-mobile {
+    @apply text-gray-700;
+  }
+
+  #markdown-preview-mobile h2 {
+    @apply text-xl font-bold text-gray-900 mt-4 mb-2;
+  }
+
+  #markdown-preview-mobile h3 {
+    @apply text-lg font-bold text-gray-900 mt-3 mb-2;
+  }
+
+  #markdown-preview-mobile p {
+    @apply mb-3 leading-7;
+  }
+
+  #markdown-preview-mobile ul,
+  #markdown-preview-mobile ol {
+    @apply ml-4 mb-3;
+  }
+
+  #markdown-preview-mobile li {
+    @apply mb-1;
+  }
+
+  #markdown-preview-mobile code {
+    @apply bg-gray-100 px-2 py-1 rounded text-sm font-mono;
+  }
+
+  #markdown-preview-mobile a {
+    @apply text-gray-900 hover:text-gray-600 underline transition-colors;
+  }
+
+  #markdown-preview-mobile blockquote {
+    @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-3;
+  }
+}
+

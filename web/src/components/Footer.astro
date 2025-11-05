@@ -1,0 +1,40 @@
+---
+// Footer component
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="bg-gray-50 border-t border-gray-200 mt-12">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">SuperGal</h3>
+        <p class="text-gray-600 text-sm">
+          A minimal blog and gallery platform for sharing markdown content and images.
+        </p>
+      </div>
+
+      <div>
+        <h4 class="text-sm font-semibold text-gray-900 mb-4">Navigation</h4>
+        <ul class="space-y-2 text-sm">
+          <li><a href="/" class="text-gray-600 hover:text-gray-900">Home</a></li>
+          <li><a href="/blog" class="text-gray-600 hover:text-gray-900">Blog</a></li>
+          <li><a href="/galleries" class="text-gray-600 hover:text-gray-900">Gallery</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="text-sm font-semibold text-gray-900 mb-4">Admin</h4>
+        <ul class="space-y-2 text-sm">
+          <li><a href="/login" class="text-gray-600 hover:text-gray-900">Login</a></li>
+          <li><a href="/admin" class="text-gray-600 hover:text-gray-900">Dashboard</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="border-t border-gray-200 pt-8">
+      <p class="text-gray-600 text-sm text-center">
+        &copy; {currentYear} SuperGal. All rights reserved.
+      </p>
+    </div>
+  </div>
+</footer>

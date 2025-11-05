@@ -1,0 +1,61 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import Pagination from '../../components/Pagination.astro';
+import SearchBar from '../../components/SearchBar.astro';
+import { getPosts } from '../../utils/api';
+import { getExcerpt, getReadingTime } from '../../utils/markdown';
+
+const POSTS_PER_PAGE = 10;
+const currentPage = parseInt(Astro.url.searchParams.get('page') || '1');
+
+// Fetch posts for current page
+const postsResult = await getPosts(currentPage, POSTS_PER_PAGE);
+const posts = postsResult.success ? postsResult.data || [] : [];
+
+// Calculate total pages (simplified - assumes API returns all posts)
+// In a real app, you'd get totalCount from the API response
+const totalPages = Math.ceil(posts.length / POSTS_PER_PAGE) || 1;
+---
+
+<BaseLayout pageTitle="Blog" description="Read our latest blog posts">
+  <!-- Page Header -->
+  <section class="bg-gradient-to-br from-gray-50 to-gray-100 py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h1 class="text-4xl font-bold text-gray-900 mb-4">Blog</h1>
+      <p class="text-xl text-gray-600 mb-8">Explore our latest articles and insights</p>
+      <div class="w-full max-w-md">
+        <SearchBar />
+      </div>
+    </div>
+  </section>
+
+  <!-- Posts Grid -->
+  <section class="py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      {posts.length > 0 ? (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
+          {posts.map(post => (
+            <PostCard
+              title={post.title}
+              slug={post.slug}
+              excerpt={post.excerpt || getExcerpt(post.content)}
+              createdAt={post.createdAt}
+              readingTime={getReadingTime(post.content)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div class="py-12 text-center">
+          <p class="text-gray-500 text-lg">No posts found.</p>
+        </div>
+      )}
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        baseUrl="/blog"
+      />
+    </div>
+  </section>
+</BaseLayout>

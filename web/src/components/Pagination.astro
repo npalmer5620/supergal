@@ -1,0 +1,83 @@
+---
+interface Props {
+  currentPage: number;
+  totalPages: number;
+  baseUrl: string;
+}
+
+const { currentPage, totalPages, baseUrl } = Astro.props;
+
+// Generate page numbers to display
+const getPageNumbers = () => {
+  const pages = [];
+  const maxVisible = 7;
+
+  if (totalPages <= maxVisible) {
+    for (let i = 1; i <= totalPages; i++) {
+      pages.push(i);
+    }
+  } else {
+    pages.push(1);
+
+    let start = Math.max(2, currentPage - 2);
+    let end = Math.min(totalPages - 1, currentPage + 2);
+
+    if (start > 2) pages.push('...');
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    if (end < totalPages - 1) pages.push('...');
+
+    pages.push(totalPages);
+  }
+
+  return pages;
+};
+
+const pages = getPageNumbers();
+const hasPrevious = currentPage > 1;
+const hasNext = currentPage < totalPages;
+---
+
+{totalPages > 1 && (
+  <nav class="flex items-center justify-center gap-2 py-8">
+    {hasPrevious && (
+      <a
+        href={`${baseUrl}?page=${currentPage - 1}`}
+        class="px-4 py-2 rounded-lg border border-gray-200 text-gray-900 hover:bg-gray-50 transition-colors"
+      >
+        Previous
+      </a>
+    )}
+
+    <div class="flex gap-1">
+      {pages.map((page) => (
+        <div key={page}>
+          {page === '...' ? (
+            <span class="px-3 py-2 text-gray-500">...</span>
+          ) : (
+            <a
+              href={`${baseUrl}?page=${page}`}
+              class={`px-3 py-2 rounded-lg border transition-colors ${
+                page === currentPage
+                  ? 'border-gray-900 bg-gray-900 text-white'
+                  : 'border-gray-200 text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              {page}
+            </a>
+          )}
+        </div>
+      ))}
+    </div>
+
+    {hasNext && (
+      <a
+        href={`${baseUrl}?page=${currentPage + 1}`}
+        class="px-4 py-2 rounded-lg border border-gray-200 text-gray-900 hover:bg-gray-50 transition-colors"
+      >
+        Next
+      </a>
+    )}
+  </nav>
+)}

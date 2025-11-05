@@ -1,0 +1,27 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import PostForm from '../../../components/PostForm.astro';
+
+const pageTitle = 'Create Post';
+---
+
+<AdminLayout pageTitle={pageTitle}>
+  <div class="space-y-6">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">{pageTitle}</h1>
+      <p class="text-gray-600 mt-2">Write and publish a new blog post</p>
+    </div>
+
+    <PostForm
+      submitText="Publish Post"
+      post={{
+        title: '',
+        slug: '',
+        content: '',
+        excerpt: '',
+        status: 'draft',
+        scheduledDate: ''
+      }}
+    />
+  </div>
+</AdminLayout>

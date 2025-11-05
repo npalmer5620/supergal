@@ -1,0 +1,47 @@
+---
+import type { Image } from '../utils/api';
+
+interface Props {
+  images: Image[];
+  columns?: 2 | 3 | 4;
+}
+
+const { images, columns = 3 } = Astro.props;
+
+const colsClass = {
+  2: 'grid-cols-1 md:grid-cols-2',
+  3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+  4: 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+};
+---
+
+<div class={`grid ${colsClass[columns]} gap-4`}>
+  {images.map((image) => (
+    <div class="group relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+      <img
+        src={image.urls?.thumbnail500 || image.urls?.original}
+        alt={image.title}
+        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+      />
+      <div class="absolute inset-0 bg-black opacity-0 group-hover:opacity-40 transition-opacity duration-300 flex items-end p-4">
+        <div class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <p class="font-medium text-sm">{image.title}</p>
+        </div>
+      </div>
+
+      <a
+        href={image.urls?.original}
+        target="_blank"
+        rel="noreferrer"
+        class="absolute inset-0"
+        title="View full image"
+      />
+    </div>
+  ))}
+</div>
+
+{images.length === 0 && (
+  <div class="col-span-full py-12 text-center text-gray-500">
+    <p>No images in this gallery</p>
+  </div>
+)}

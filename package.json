@@ -1,14 +1,10 @@
 {
-  "name": "virtual-visual",
-  "type": "module",
-  "version": "0.0.1",
+  "name": "supergal",
+  "private": true,
+  "workspaces": ["web", "api"],
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
-  },
-  "dependencies": {
-    "astro": "^5.15.3"
+    "dev:web": "npm run dev -w web",
+    "dev:api": "npm run dev -w api",
+    "dev": "npm run dev:web & npm run dev:api"
   }
 }
