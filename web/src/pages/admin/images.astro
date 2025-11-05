@@ -63,6 +63,13 @@ const apiBase = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:8787/api';
       const API_BASE = scriptEl.dataset.apiBase || 'http://localhost:8787/api';
       const form = document.getElementById('upload-form');
       const container = document.getElementById('images-container');
+      const API_ORIGIN = (() => {
+        try {
+          return new URL(API_BASE, window.location.origin).origin;
+        } catch {
+          return API_BASE.replace(/\/api$/, '');
+        }
+      })();
 
       const escapeHtml = (value) =>
         String(value ?? '')
@@ -74,7 +81,7 @@ const apiBase = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:8787/api';
 
       async function fetchJson(url, options = {}) {
         const response = await fetch(url, { credentials: 'include', ...options });
-        let payload = null;
+        let payload;
         try {
           payload = await response.clone().json();
         } catch {
@@ -95,6 +102,16 @@ const apiBase = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:8787/api';
       function renderMessage(html) {
         if (!container) return;
         container.innerHTML = html;
+      }
+
+      function resolveAssetUrl(path) {
+        if (!path || typeof path !== 'string') return '';
+        if (/^(?:[a-z]+:)?\/\//i.test(path)) {
+          return path;
+        }
+        const base = API_ORIGIN.replace(/\/$/, '');
+        const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+        return `${base}${normalizedPath}`;
       }
 
       async function loadImages() {
@@ -121,8 +138,9 @@ const apiBase = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:8787/api';
 
           const cards = images
             .map((image) => {
-              const thumb =
-                (image && image.urls && (image.urls.thumbnail200 || image.urls.original)) || '';
+              const thumb = resolveAssetUrl(
+                (image && image.urls && (image.urls.thumbnail200 || image.urls.original)) || ''
+              );
               const title = escapeHtml(image?.title ?? 'Untitled image');
               const filename = escapeHtml(image?.filename ?? '');
               const id = escapeHtml(image?.id ?? '');
